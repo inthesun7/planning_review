@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>복습 플래너</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+:root {
+  --bg:#f2f2f7; --surface:#fff; --text:#1c1c1e; --text2:#8e8e93; --text3:#aeaeb2;
+  --border:rgba(60,60,67,0.12); --accent:#7eb8f7; --accent-dark:#4a90d9;
+  --red:#ff6b6b; --green:#6bcb8b; --radius:12px; --tab-h:72px; --addbtn-h:62px;
+}
+
+html, body { height:100%; }
+body { font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); margin:0 auto; max-width:430px; overflow-x:hidden; position:relative; }
+
+.header { background:rgba(242,242,247,0.95); backdrop-filter:blur(20px); padding:60px 20px 12px; border-bottom:1px solid var(--border); text-align:center; position:sticky; top:0; z-index:100; }
+.header h1 { font-size:28px; font-weight:700; letter-spacing:-0.5px; }
+
+.content { overflow-y:auto; overflow-x:hidden; padding-bottom:calc(var(--tab-h) + var(--addbtn-h) + 12px); min-height:100vh; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+
+/* ── Auth Screen ── */
+#auth-screen { position:fixed; inset:0; background:var(--bg); z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; max-width:430px; margin:0 auto; }
+.auth-logo { font-size:32px; font-weight:700; margin-bottom:8px; }
+.auth-sub { font-size:14px; color:var(--text2); margin-bottom:40px; }
+.auth-card { background:var(--surface); border-radius:20px; padding:28px 24px; width:100%; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+.auth-title { font-size:20px; font-weight:700; margin-bottom:20px; }
+.auth-field { margin-bottom:14px; }
+.auth-field label { display:block; font-size:12px; color:var(--text2); font-weight:500; margin-bottom:5px; }
+.auth-field input { width:100%; padding:11px 14px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg); font-size:15px; font-family:inherit; color:var(--text); outline:none; transition:border-color .15s; }
+.auth-field input:focus { border-color:var(--accent); }
+.auth-btn { width:100%; padding:13px; border-radius:12px; border:none; background:var(--accent); color:#fff; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-top:6px; transition:background .15s; }
+.auth-btn:hover { background:var(--accent-dark); }
+.auth-switch { text-align:center; margin-top:16px; font-size:13px; color:var(--text2); }
+.auth-switch button { border:none; background:none; color:var(--accent-dark); font-weight:600; font-family:inherit; font-size:13px; cursor:pointer; }
+.auth-error { color:var(--red); font-size:12px; margin-top:8px; text-align:center; min-height:16px; }
+.auth-user-bar { position:fixed; top:0; left:0; right:0; width:100%; max-width:430px; margin:0 auto; z-index:300; background:rgba(242,242,247,0.95); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); padding:10px 16px; display:none; align-items:center; justify-content:space-between; }
+.auth-user-email { font-size:12px; color:var(--text2); }
+.auth-logout-btn { font-size:12px; font-weight:600; color:var(--red); border:none; background:none; font-family:inherit; cursor:pointer; }
+.sync-indicator { font-size:11px; color:var(--text3); margin-left:auto; margin-right:8px; }
+
+/* ── Tab Bar ── */
+.tab-bar { position:fixed; bottom:0; left:0; right:0; width:100%; max-width:430px; margin:0 auto; height:var(--tab-h); background:rgba(255,255,255,0.92); backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; z-index:200; }
+.tab-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border:none; background:none; cursor:pointer; color:var(--text3); font-size:10px; font-family:inherit; font-weight:500; padding-bottom:8px; transition:color .15s; }
+.tab-btn.active { color:var(--accent-dark); }
+.tab-btn svg { width:24px; height:24px; }
+
+/* ── Fixed Add Button ── */
+#add-btn-wrap { position:fixed; bottom:var(--tab-h); left:0; right:0; width:100%; max-width:430px; margin:0 auto; padding:8px 16px; background:rgba(242,242,247,0.95); backdrop-filter:blur(16px); border-top:1px solid var(--border); z-index:150; }
+.add-btn { width:100%; padding:12px; border-radius:var(--radius); border:2px dashed var(--accent); background:none; color:var(--accent-dark); font-size:22px; cursor:pointer; transition:background .15s; font-family:inherit; }
+.add-btn:hover { background:rgba(126,184,247,.12); }
+
+/* ══ TAB1 INPUT ══ */
+.input-panel { padding:16px; }
+
+/* Folder group */
+.folder-group { background:var(--surface); border-radius:var(--radius); margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.07); overflow:hidden; }
+.folder-header { display:flex; align-items:center; gap:10px; padding:14px 16px; cursor:pointer; user-select:none; }
+.folder-icon { font-size:18px; transition:transform .2s; }
+.folder-icon.open { transform:rotate(0deg); }
+.folder-name { font-size:16px; font-weight:700; flex:1; }
+.folder-count { font-size:12px; color:var(--text2); font-weight:500; }
+.folder-color-bar { width:5px; height:28px; border-radius:3px; flex-shrink:0; }
+.folder-body { border-top:1px solid var(--border); }
+
+/* Task card inside folder */
+.task-card { background:var(--surface); padding:14px 16px; border-bottom:1px solid var(--border); animation:slideIn .2s ease; }
+.task-card:last-child { border-bottom:none; }
+.task-card.editing { background:rgba(126,184,247,.05); }
+@keyframes slideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+.card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.card-label { font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.4px; }
+.saved-badge { font-size:11px; color:#3aaa68; font-weight:600; background:rgba(107,203,139,.15); padding:3px 8px; border-radius:20px; }
+
+.field { margin-bottom:10px; }
+.field label { display:block; font-size:12px; color:var(--text2); margin-bottom:4px; font-weight:500; }
+.field input { width:100%; padding:9px 12px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg); font-size:14px; font-family:inherit; color:var(--text); outline:none; transition:border-color .15s, box-shadow .15s; }
+.field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(126,184,247,.2); }
+.field input:disabled { color:var(--text2); cursor:default; }
+
+/* Color */
+.color-row { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+.color-swatch { width:28px; height:28px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:transform .1s,border-color .1s; flex-shrink:0; }
+.color-swatch.selected { border-color:#333; transform:scale(1.15); }
+.color-swatch.disabled { cursor:default; }
+/* color-spectrum: hidden, triggered by 9th swatch click */
+.color-spectrum { position:absolute; width:0; height:0; opacity:0; pointer-events:none; }
+
+/* Mode */
+.mode-selector { display:flex; gap:5px; }
+.mode-btn { flex:1; padding:8px 3px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg); font-size:10px; font-weight:600; font-family:inherit; color:var(--text2); cursor:pointer; text-align:center; transition:all .15s; line-height:1.4; }
+.mode-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.mode-btn.disabled { cursor:default; }
+.mode-hint { font-size:11px; color:var(--text2); margin-top:5px; }
+
+/* Custom dates */
+.custom-dates-area { margin-top:8px; }
+.custom-date-chips { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; min-height:24px; }
+.date-chip { display:flex; align-items:center; gap:4px; background:var(--bg); border-radius:20px; padding:3px 9px; font-size:11px; font-weight:500; border:1.5px solid var(--border); }
+.chip-remove { font-size:13px; color:var(--text3); cursor:pointer; }
+.open-picker-btn { width:100%; padding:8px; border-radius:8px; border:1.5px dashed var(--accent); background:rgba(126,184,247,.06); color:var(--accent-dark); font-size:12px; font-weight:600; font-family:inherit; cursor:pointer; }
+
+/* Action buttons */
+.action-row { display:flex; gap:8px; margin-top:12px; }
+.action-btn { flex:1; padding:10px 0; border-radius:10px; border:none; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; transition:all .15s; }
+.btn-delete { background:#fff0f0; color:var(--red); border:1.5px solid #ffcdd2; }
+.btn-edit   { background:var(--bg); color:var(--text2); border:1.5px solid var(--border); }
+.btn-save   { background:var(--accent); color:#fff; }
+.btn-save:active { background:var(--accent-dark); transform:scale(.98); }
+.delete-confirm { display:flex; align-items:center; gap:8px; margin-top:10px; padding:10px; background:#fff5f5; border-radius:10px; animation:slideIn .2s ease; }
+
+/* Add task inside folder */
+.add-task-in-folder { width:100%; padding:10px; border:none; background:rgba(126,184,247,.06); color:var(--accent-dark); font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; text-align:center; }
+.add-task-in-folder:hover { background:rgba(126,184,247,.12); }
+
+/* ══ MODAL ══ */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s; }
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal-sheet { background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-width:430px; padding:20px 16px 44px; transform:translateY(100%); transition:transform .3s cubic-bezier(.32,0,.67,0); }
+.modal-overlay.open .modal-sheet { transform:translateY(0); transition:transform .3s cubic-bezier(.33,1,.68,1); }
+.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.modal-title { font-size:17px; font-weight:700; }
+.modal-actions { display:flex; gap:8px; align-items:center; }
+.modal-close { width:30px; height:30px; border-radius:50%; border:none; background:var(--bg); font-size:18px; color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.modal-done { padding:8px 16px; border-radius:20px; border:none; background:var(--accent); color:#fff; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; }
+.mini-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.mini-nav button { width:30px; height:30px; border:none; background:none; font-size:18px; color:var(--accent-dark); cursor:pointer; border-radius:50%; }
+.mini-nav-title { font-size:15px; font-weight:700; }
+.mini-weekdays { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:4px; }
+.mini-weekday { text-align:center; font-size:11px; font-weight:600; color:var(--text2); padding:2px 0; }
+.mini-weekday:first-child { color:var(--red); }
+.mini-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+.mini-cell { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:50%; cursor:pointer; font-size:13px; font-weight:500; color:var(--text); transition:background .1s; }
+.mini-cell:hover { background:rgba(0,0,0,.06); }
+.mini-cell.other-m { color:var(--text3); pointer-events:none; }
+.mini-cell.today-m { font-weight:700; border:1.5px solid var(--accent-dark); color:var(--accent-dark); }
+.mini-cell.picked-m { background:var(--accent); color:#1c1c1e; font-weight:700; }
+.mini-cell.today-m.picked-m, .mini-cell.sun-m.picked-m { color:#1c1c1e; }
+.mini-cell.sun-m { color:var(--red); }
+.mini-hint { margin-top:10px; font-size:11px; color:var(--text3); text-align:center; }
+.mini-selected-count { margin-top:8px; font-size:12px; color:var(--accent-dark); font-weight:600; text-align:center; }
+
+/* ══ TAB2 CALENDAR ══ */
+.cal-panel { padding:0 16px 16px; }
+.cal-nav { display:flex; align-items:center; justify-content:space-between; padding:14px 4px 10px; }
+.cal-nav button { width:32px; height:32px; border:none; background:none; font-size:20px; color:var(--accent-dark); cursor:pointer; border-radius:50%; }
+.cal-title { font-size:19px; font-weight:700; }
+.cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:4px; }
+.cal-weekday { text-align:center; font-size:12px; font-weight:600; color:var(--text2); padding:4px 0; }
+.cal-weekday:first-child { color:var(--red); }
+.cal-weekday:last-child { color:var(--accent-dark); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-cell { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; padding-top:4px; cursor:pointer; border-radius:10px; transition:background .1s; min-height:48px; }
+.cal-cell:hover { background:rgba(0,0,0,.04); }
+.cal-cell.today .day-num { background:var(--accent); color:#1c1c1e; font-weight:700; }
+.cal-cell.selected-day { background:rgba(126,184,247,.18); }
+.cal-cell.other-month .day-num { color:var(--text3); }
+.day-num { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:500; color:var(--text); }
+.cal-cell.sun-cell .day-num { color:var(--red); }
+.dot-row { display:flex; flex-wrap:wrap; justify-content:center; gap:2px; padding:2px 3px 0; max-width:100%; }
+.dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.day-detail { background:var(--surface); border-radius:var(--radius); margin-top:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.day-detail-header { padding:12px 16px; font-size:14px; font-weight:600; border-bottom:1px solid var(--border); color:var(--text2); }
+.review-item { display:flex; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border); gap:12px; }
+.review-item:last-child { border-bottom:none; }
+.review-check { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.review-check.checked { border-color:transparent; background:var(--green); }
+.review-check.checked::after { content:''; display:block; width:5px; height:9px; border:2px solid #fff; border-top:none; border-left:none; transform:rotate(45deg) translateY(-1px); }
+.review-color-bar { width:4px; height:36px; border-radius:2px; flex-shrink:0; }
+.review-text { flex:1; }
+.review-subject { font-size:12px; color:var(--text2); font-weight:500; }
+.review-task { font-size:15px; font-weight:500; margin-top:1px; }
+.review-round { font-size:12px; color:var(--text2); margin-top:1px; }
+.review-item.done .review-task { text-decoration:line-through; color:var(--text3); }
+.no-tasks { padding:24px; text-align:center; color:var(--text3); font-size:14px; }
+
+/* ══ TAB3 STATS ══ */
+.stats-panel { padding:16px; }
+.stats-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.stats-title { font-size:13px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; }
+.more-btn { font-size:12px; font-weight:600; color:var(--accent-dark); background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:8px; }
+.more-btn:hover { background:rgba(126,184,247,.12); }
+.pie-wrap { background:var(--surface); border-radius:var(--radius); padding:24px; display:flex; flex-direction:column; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:16px; }
+.pie-wrap canvas { max-width:200px; max-height:200px; }
+.pie-legend { width:100%; margin-top:20px; display:flex; flex-direction:column; gap:8px; }
+.legend-item { display:flex; align-items:center; gap:10px; }
+.legend-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.legend-label { font-size:14px; flex:1; }
+.legend-pct { font-size:14px; font-weight:600; color:var(--text2); }
+
+/* Folder stats card */
+.folder-stat { background:var(--surface); border-radius:var(--radius); margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); overflow:hidden; }
+.folder-stat-header { display:flex; align-items:center; gap:10px; padding:14px 16px 10px; }
+.folder-stat-bar { width:5px; height:24px; border-radius:3px; flex-shrink:0; }
+.folder-stat-name { font-size:15px; font-weight:700; flex:1; }
+.folder-stat-pct { font-size:14px; font-weight:700; color:var(--text2); }
+.folder-stat-body { padding:0 16px 14px; }
+.task-stat-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.task-stat-row:last-child { margin-bottom:0; }
+.task-stat-name { font-size:13px; flex:1; color:var(--text2); }
+.task-progress-bg { flex:2; height:6px; background:var(--bg); border-radius:3px; overflow:hidden; }
+.task-progress-fill { height:100%; border-radius:3px; transition:width .5s ease; }
+.task-stat-num { font-size:11px; color:var(--text3); width:36px; text-align:right; flex-shrink:0; }
+
+/* Year popup */
+.month-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:4px; }
+.month-cell { background:var(--bg); border-radius:10px; padding:14px 8px; text-align:center; cursor:pointer; font-size:14px; font-weight:600; border:1.5px solid transparent; transition:all .15s; }
+.month-cell:hover { border-color:var(--accent); background:rgba(126,184,247,.1); }
+.month-cell.selected-month { background:var(--accent); color:#1c1c1e; border-color:var(--accent); }
+.month-cell .month-pct { font-size:11px; font-weight:500; color:var(--text2); margin-top:3px; }
+.month-cell.selected-month .month-pct { color:#1c1c1e; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <div class="auth-logo">복습 플래너</div>
+  <div class="auth-sub">기기 어디서든 복습 일정을 관리하세요</div>
+  <div class="auth-card">
+    <div class="auth-title" id="auth-title">로그인</div>
+    <div class="auth-field">
+      <label>이메일</label>
+      <input type="email" id="auth-email" placeholder="example@email.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <label>비밀번호</label>
+      <input type="password" id="auth-pw" placeholder="비밀번호 입력" autocomplete="current-password">
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <button class="auth-btn" id="auth-submit-btn" onclick="authSubmit()">로그인</button>
+    <div class="auth-switch">
+      <span id="auth-switch-text">계정이 없으신가요?</span>
+      <button onclick="toggleAuthMode()"><span id="auth-switch-btn">회원가입</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- User Bar -->
+<div class="auth-user-bar" id="user-bar">
+  <div class="auth-user-email" id="user-email-display"></div>
+  <span class="sync-indicator" id="sync-indicator"></span>
+  <button class="auth-logout-btn" onclick="doLogout()">로그아웃</button>
+</div>
+
+<div class="header"><h1>복습 플래너</h1></div>
+
+<div class="content">
+
+  <!-- TAB 1 -->
+  <div class="tab-panel active" id="panel-input">
+    <div class="input-panel">
+      <div id="task-list"></div>
+    </div>
+  </div>
+
+  <!-- TAB 2 -->
+  <div class="tab-panel" id="panel-calendar">
+    <div class="cal-panel">
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">&#8249;</button>
+        <div class="cal-title" id="cal-title"></div>
+        <button onclick="changeMonth(1)">&#8250;</button>
+      </div>
+      <div class="cal-weekdays">
+        <div class="cal-weekday">일</div><div class="cal-weekday">월</div>
+        <div class="cal-weekday">화</div><div class="cal-weekday">수</div>
+        <div class="cal-weekday">목</div><div class="cal-weekday">금</div>
+        <div class="cal-weekday">토</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="day-detail" id="day-detail" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- TAB 3 -->
+  <div class="tab-panel" id="panel-stats">
+    <div class="stats-panel">
+      <div class="stats-header-row">
+        <div class="stats-title" id="stats-month-title"></div>
+        <button class="more-btn" onclick="openYearPopup()">더보기</button>
+      </div>
+      <div class="pie-wrap">
+        <canvas id="pie-canvas" width="200" height="200"></canvas>
+        <div class="pie-legend" id="pie-legend"></div>
+      </div>
+      <div id="subject-cards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Fixed Add Button -->
+<div id="add-btn-wrap">
+  <button class="add-btn" onclick="addNewFolder()">＋</button>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('input',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    입력
+  </button>
+  <button class="tab-btn" onclick="switchTab('calendar',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    캘린더
+  </button>
+  <button class="tab-btn" onclick="switchTab('stats',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+    통계
+  </button>
+</div>
+
+<!-- Date Picker Modal -->
+<div class="modal-overlay" id="date-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">복습 날짜 선택</div>
+      <div class="modal-actions">
+        <button class="modal-close" onclick="closeModal()">&#215;</button>
+        <button class="modal-done" onclick="confirmDates()">완료</button>
+      </div>
+    </div>
+    <div class="mini-nav">
+      <button onclick="miniChangeMonth(-1)">&#8249;</button>
+      <div class="mini-nav-title" id="mini-title"></div>
+      <button onclick="miniChangeMonth(1)">&#8250;</button>
+    </div>
+    <div class="mini-weekdays">
+      <div class="mini-weekday">일</div><div class="mini-weekday">월</div>
+      <div class="mini-weekday">화</div><div class="mini-weekday">수</div>
+      <div class="mini-weekday">목</div><div class="mini-weekday">금</div>
+      <div class="mini-weekday">토</div>
+    </div>
+    <div class="mini-grid" id="mini-grid"></div>
+    <div class="mini-selected-count" id="mini-count"></div>
+    <div class="mini-hint">날짜를 탭해서 선택 · 다시 탭하면 해제</div>
+  </div>
+</div>
+
+<!-- Year/Month Popup -->
+<div class="modal-overlay" id="year-popup" onclick="if(event.target===this)closeYearPopup()">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="padding-bottom:32px;">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="changePopupYear(-1)" style="width:28px;height:28px;border:none;background:none;font-size:18px;color:var(--accent-dark);cursor:pointer;">&#8249;</button>
+        <div class="modal-title" id="popup-year-title"></div>
+        <button onclick="changePopupYear(1)" style="width:28px;height:28px;border:none;background:none;font-size:18px;color:var(--accent-dark);cursor:pointer;">&#8250;</button>
+      </div>
+      <button class="modal-close" onclick="closeYearPopup()">&#215;</button>
+    </div>
+    <div class="month-grid" id="popup-month-grid"></div>
+  </div>
+</div>
+
+<script>
+var COLORS = ['#ff6b6b','#ffa94d','#ffd43b','#69db7c','#7eb8f7','#9775fa','#da77f2','#f783ac'];
+var FIVE_OFFSETS = [1,3,7,14,30];
+var FIVE_LABELS  = ['1차 복습','2차 복습','3차 복습','4차 복습','5차 복습'];
+
+// Data model:
+// folders = [{id, name, color, open, tasks:[{id, todo, startDate, mode, customDates, editMode}]}]
+var folders = JSON.parse(localStorage.getItem('rp5_folders') || '[]');
+var checked  = JSON.parse(localStorage.getItem('rp5_checked') || '{}');
+
+var today = new Date();
+var calYear=today.getFullYear(), calMonth=today.getMonth(), selectedDate=null;
+var modalTaskId=null, modalFolderId=null;
+var miniYear=today.getFullYear(), miniMonth=today.getMonth(), pendingDates=[];
+var statsYear=today.getFullYear(), statsMonth=today.getMonth();
+var popupYear=today.getFullYear();
+
+function save() {
+  localStorage.setItem('rp5_folders', JSON.stringify(folders));
+  localStorage.setItem('rp5_checked', JSON.stringify(checked));
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ── Tab ────────────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+  var w = document.getElementById('add-btn-wrap');
+  if (w) w.style.display = (id==='input') ? 'block' : 'none';
+  if (id==='calendar') renderCalendar();
+  if (id==='stats')    renderStats();
+}
+
+// ── Folder management ──────────────────────────────────
+function addNewFolder() {
+  var f = { id:uid(), name:'', color:COLORS[folders.length%COLORS.length], open:true,
+            tasks:[{ id:uid(), todo:'', startDate:'', mode:'five', customDates:[], editMode:true }] };
+  folders.push(f);
+  save();
+  renderFolders();
+  setTimeout(function(){ document.querySelector('.content').scrollTop=99999; }, 60);
+}
+
+function addTaskToFolder(folderId) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  f.tasks.push({ id:uid(), todo:'', startDate:'', mode:'five', customDates:[], editMode:true });
+  f.open = true;
+  save(); renderFolders();
+  setTimeout(function(){ document.querySelector('.content').scrollTop=99999; }, 60);
+}
+
+function toggleFolder(folderId) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (f) { f.open = !f.open; save(); renderFolders(); }
+}
+
+function deleteFolder(folderId) {
+  folders = folders.filter(function(f){ return f.id!==folderId; });
+  save(); renderFolders();
+}
+
+function saveFolder(folderId) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  var nameEl = document.getElementById('fname-'+folderId);
+  if (nameEl) f.name = nameEl.value;
+  // Also save all tasks in edit mode
+  f.tasks.forEach(function(t) {
+    if (t.editMode) saveTaskFields(folderId, t.id);
+  });
+  save(); renderFolders();
+}
+
+function editFolder(folderId) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  f.tasks.forEach(function(t){ t.editMode = true; });
+  save(); renderFolders();
+}
+
+function deleteTask(folderId, taskId) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  var card = document.querySelector('.task-card[data-tid="'+taskId+'"]');
+  if (card && card.querySelector('.delete-confirm')) { card.querySelector('.delete-confirm').remove(); return; }
+  if (card) {
+    var row = card.querySelector('.action-row');
+    var dc = document.createElement('div');
+    dc.className = 'delete-confirm';
+    dc.innerHTML =
+      '<span style="font-size:12px;color:var(--text2);flex:1">삭제할까요?</span>'+
+      '<button onclick="confirmDeleteTask(\''+folderId+'\',\''+taskId+'\')" style="padding:5px 12px;border-radius:7px;border:none;background:var(--red);color:#fff;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;">삭제</button>'+
+      '<button onclick="cancelDeleteTask(\''+taskId+'\')" style="padding:5px 12px;border-radius:7px;background:var(--bg);color:var(--text2);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;border:1.5px solid var(--border);">취소</button>';
+    row.after(dc);
+  }
+}
+
+function confirmDeleteTask(folderId, taskId) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (f) { f.tasks = f.tasks.filter(function(t){ return t.id!==taskId; }); }
+  if (f && f.tasks.length===0) folders = folders.filter(function(fl){ return fl.id!==folderId; });
+  save(); renderFolders();
+}
+
+function cancelDeleteTask(taskId) {
+  var card = document.querySelector('.task-card[data-tid="'+taskId+'"]');
+  if (card) { var dc=card.querySelector('.delete-confirm'); if(dc) dc.remove(); }
+}
+
+function startEditTask(folderId, taskId) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  var t = f.tasks.find(function(t){ return t.id===taskId; });
+  if (t) { t.editMode=true; save(); renderFolders(); }
+}
+
+function saveTask(folderId, taskId) {
+  saveTaskFields(folderId, taskId);
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  var t = f.tasks.find(function(t){ return t.id===taskId; });
+  if (t) { t.editMode=false; }
+  // Also save folder name if editing
+  var nameEl = document.getElementById('fname-'+folderId);
+  if (nameEl) f.name = nameEl.value;
+  save(); renderFolders();
+}
+
+function saveTaskFields(folderId, taskId) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  var t = f.tasks.find(function(t){ return t.id===taskId; });
+  if (!t) return;
+  var todoEl = document.getElementById('todo-'+taskId);
+  var dateEl = document.getElementById('date-'+taskId);
+  if (todoEl) t.todo = todoEl.value;
+  if (dateEl) t.startDate = dateEl.value;
+}
+
+function setTaskField(folderId, taskId, key, val) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  var t = f.tasks.find(function(t){ return t.id===taskId; });
+  if (t) { t[key]=val; save(); }
+}
+
+function setTaskMode(folderId, taskId, mode) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  var t = f.tasks.find(function(t){ return t.id===taskId; });
+  if (t) { t.mode=mode; save(); renderFolders(); }
+}
+
+function pickColor(folderId, color) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (f) { f.color=color; f.tasks.forEach(function(t){ t._folderColor=color; }); save(); renderFolders(); }
+}
+
+function pickColorCustom(folderId, color) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  f.color = color; save();
+  var bar = document.querySelector('.folder-group[data-fid="'+folderId+'"] .folder-color-bar');
+  if (bar) bar.style.background = color;
+  var card = document.querySelector('.folder-group[data-fid="'+folderId+'"]');
+  if (card) {
+    card.querySelectorAll('.color-swatch').forEach(function(s){ s.classList.remove('selected'); });
+    var cs = card.querySelector('.custom-color-swatch');
+    if (cs) { cs.style.background=color; cs.classList.add('selected'); }
+  }
+}
+
+function removeChip(folderId, taskId, dk) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (!f) return;
+  var t = f.tasks.find(function(t){ return t.id===taskId; });
+  if (t) { t.customDates=(t.customDates||[]).filter(function(d){ return d!==dk; }); save(); renderFolders(); }
+}
+
+// ── Render Folders ─────────────────────────────────────
+function renderFolders() {
+  var list = document.getElementById('task-list');
+  list.innerHTML = '';
+
+  // Check if any folder has a task in editMode
+  var anyEditing = false;
+  folders.forEach(function(f){ f.tasks.forEach(function(t){ if(t.editMode) anyEditing=true; }); });
+
+  folders.forEach(function(f) {
+    var folderEditing = f.tasks.some(function(t){ return t.editMode; });
+    var div = document.createElement('div');
+    div.className = 'folder-group';
+    div.dataset.fid = f.id;
+
+    // ── Folder header ──
+    var headerHtml =
+      '<div class="folder-header" onclick="toggleFolder(\''+f.id+'\')">' +
+        '<div class="folder-color-bar" style="background:'+f.color+'"></div>' +
+        (folderEditing
+          ? '<input id="fname-'+f.id+'" type="text" placeholder="과목명 입력" value="'+escHtml(f.name)+'" onclick="event.stopPropagation()" oninput="setFolderName(\''+f.id+'\',this.value)" style="font-size:15px;font-weight:700;border:none;background:none;outline:none;flex:1;padding:0;font-family:inherit;color:var(--text);">'
+          : '<div class="folder-name">'+escHtml(f.name||'(과목 없음)')+'</div>'
+        ) +
+        '<div class="folder-count">'+f.tasks.length+'개</div>' +
+        '<div class="folder-icon '+(f.open?'open':'')+'">'+(f.open?'▾':'▸')+'</div>' +
+      '</div>';
+
+    var bodyHtml = '';
+    if (f.open) {
+      bodyHtml += '<div class="folder-body">';
+
+      // Color picker (only shown when editing)
+      if (folderEditing) {
+        var swatchesHtml = '';
+        COLORS.forEach(function(c) {
+          var sel = (f.color===c) ? ' selected' : '';
+          swatchesHtml += '<div class="color-swatch'+sel+'" style="background:'+c+'" onclick="pickColor(\''+f.id+'\',\''+c+'\')"></div>';
+        });
+        var isCustom = COLORS.indexOf(f.color)===-1;
+        // 9번째 원: 레인보우 그라디언트, 클릭하면 숨겨진 color input 오픈
+        swatchesHtml +=
+          '<div class="color-swatch custom-color-swatch'+(isCustom?' selected':'')+'"' +
+          ' style="background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);'+(isCustom?'border-color:#333;':'')+'"' +
+          ' title="색상 직접 선택"' +
+          ' onclick="document.getElementById(\'spectrum-'+f.id+'\').click()"></div>' +
+          '<input type="color" id="spectrum-'+f.id+'" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;" value="'+f.color+'" oninput="pickColorCustom(\''+f.id+'\',this.value)">';
+        bodyHtml +=
+          '<div style="padding:10px 16px;border-bottom:1px solid var(--border);">' +
+          '<div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:6px;">폴더 색상</div>' +
+          '<div class="color-row" style="position:relative;">'+swatchesHtml+'</div>' +
+          '</div>';
+      }
+
+      // Tasks
+      f.tasks.forEach(function(t) {
+        var ed = t.editMode;
+        bodyHtml += '<div class="task-card'+(ed?' editing':'')+'" data-tid="'+t.id+'">';
+        bodyHtml += '<div class="card-header"><span class="card-label">'+escHtml(t.todo||'새 할 일')+'</span>'+(ed?'':'<span class="saved-badge">✓</span>')+'</div>';
+
+        bodyHtml += '<div class="field"><label>할 일</label><input id="todo-'+t.id+'" type="text" placeholder="예) 3장 미분법" value="'+escHtml(t.todo)+'" '+(ed?'':'disabled')+' oninput="setTaskField(\''+f.id+'\',\''+t.id+'\',\'todo\',this.value)"></div>';
+        bodyHtml += '<div class="field"><label>시작일 (D-day)</label><input id="date-'+t.id+'" type="date" value="'+t.startDate+'" '+(ed?'':'disabled')+' oninput="setTaskField(\''+f.id+'\',\''+t.id+'\',\'startDate\',this.value)"></div>';
+
+        // Mode
+        function mBtn(val, label, sub) {
+          var active = t.mode===val?' active':'';
+          var disabled = !ed?' disabled':'';
+          var click = ed?('onclick="setTaskMode(\''+f.id+'\',\''+t.id+'\',\''+val+'\')"'):'';
+          return '<button class="mode-btn'+active+disabled+'" '+click+'>'+label+'<br><span style="font-size:9px;font-weight:400">'+sub+'</span></button>';
+        }
+        bodyHtml += '<div class="field"><label>복습 주기</label><div class="mode-selector">'+mBtn('five','5차 복습','망각곡선')+mBtn('daily','매일 복습','D+1~30')+mBtn('custom','사용자 설정','직접 선택')+'</div>';
+
+        if (t.mode==='five')  bodyHtml += '<div class="mode-hint">D+1, D+3, D+7, D+14, D+30</div>';
+        else if (t.mode==='daily') bodyHtml += '<div class="mode-hint">시작일 다음 날부터 30일간 매일</div>';
+        else {
+          var chips = '';
+          (t.customDates||[]).forEach(function(dk){
+            chips += '<div class="date-chip"><span>'+dk+'</span>'+(ed?'<span class="chip-remove" onclick="removeChip(\''+f.id+'\',\''+t.id+'\',\''+dk+'\')">&#215;</span>':'')+'</div>';
+          });
+          if (!chips) chips = '<span style="font-size:11px;color:var(--text3)">날짜를 선택해주세요</span>';
+          bodyHtml += '<div class="custom-dates-area"><div class="custom-date-chips">'+chips+'</div>'+(ed?'<button class="open-picker-btn" onclick="openModal(\''+f.id+'\',\''+t.id+'\')">+ 날짜 선택</button>':'')+'</div>';
+        }
+        bodyHtml += '</div>';
+
+        bodyHtml += '<div class="action-row"><button class="action-btn btn-delete" onclick="deleteTask(\''+f.id+'\',\''+t.id+'\')">삭제</button>';
+        bodyHtml += ed
+          ? '<button class="action-btn btn-save" onclick="saveTask(\''+f.id+'\',\''+t.id+'\')">입력</button>'
+          : '<button class="action-btn btn-edit" onclick="startEditTask(\''+f.id+'\',\''+t.id+'\')">수정</button>';
+        bodyHtml += '</div></div>'; // action-row, task-card
+      });
+
+      bodyHtml += '<button class="add-task-in-folder" onclick="addTaskToFolder(\''+f.id+'\')">＋ 할 일 추가</button>';
+      bodyHtml += '</div>'; // folder-body
+    }
+
+    div.innerHTML = headerHtml + bodyHtml;
+    list.appendChild(div);
+  });
+}
+
+function setFolderName(folderId, val) {
+  var f = folders.find(function(f){ return f.id===folderId; });
+  if (f) { f.name=val; save(); }
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Modal (date picker) ────────────────────────────────
+function openModal(folderId, taskId) {
+  modalFolderId=folderId; modalTaskId=taskId;
+  var f = folders.find(function(f){ return f.id===folderId; });
+  var t = f && f.tasks.find(function(t){ return t.id===taskId; });
+  pendingDates = t ? (t.customDates||[]).slice() : [];
+  document.getElementById('date-modal').classList.add('open');
+  renderMiniCal();
+}
+function closeModal() { document.getElementById('date-modal').classList.remove('open'); }
+function confirmDates() {
+  var f = folders.find(function(f){ return f.id===modalFolderId; });
+  var t = f && f.tasks.find(function(t){ return t.id===modalTaskId; });
+  if (t) { t.customDates=pendingDates.slice().sort(); save(); renderFolders(); }
+  closeModal();
+}
+function miniChangeMonth(dir) {
+  miniMonth+=dir; if(miniMonth>11){miniMonth=0;miniYear++;} if(miniMonth<0){miniMonth=11;miniYear--;}
+  renderMiniCal();
+}
+function renderMiniCal() {
+  var months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('mini-title').textContent=miniYear+'년 '+months[miniMonth];
+  var countEl=document.getElementById('mini-count');
+  countEl.textContent=pendingDates.length>0?pendingDates.length+'개 선택됨':'';
+  var grid=document.getElementById('mini-grid'); grid.innerHTML='';
+  var todayKey=dateKey(today);
+  var first=new Date(miniYear,miniMonth,1).getDay();
+  var dim=new Date(miniYear,miniMonth+1,0).getDate();
+  var dip=new Date(miniYear,miniMonth,0).getDate();
+  var cells=[];
+  for(var i=0;i<first;i++) cells.push({day:dip-first+1+i,cur:false});
+  for(var i=1;i<=dim;i++) cells.push({day:i,cur:true});
+  while(cells.length%7!==0) cells.push({day:cells.length-first-dim+1,cur:false});
+  cells.forEach(function(c,idx){
+    var cell=document.createElement('div');
+    var d=c.cur?new Date(miniYear,miniMonth,c.day):null;
+    var dk=d?dateKey(d):null;
+    var isSun=(idx%7===0);
+    var isPicked=dk&&pendingDates.indexOf(dk)>=0;
+    var cls='mini-cell'+(!c.cur?' other-m':'')+(isSun&&c.cur?' sun-m':'')+(dk===todayKey?' today-m':'')+(isPicked?' picked-m':'');
+    cell.className=cls; cell.textContent=c.day;
+    if(c.cur&&dk){
+      (function(k){ cell.addEventListener('click',function(){
+        var idx2=pendingDates.indexOf(k);
+        if(idx2>=0) pendingDates.splice(idx2,1); else pendingDates.push(k);
+        renderMiniCal();
+      }); })(dk);
+    }
+    grid.appendChild(cell);
+  });
+}
+
+// ── Review dates ───────────────────────────────────────
+function getReviewDates(task) {
+  if (task.mode==='custom') {
+    return (task.customDates||[]).map(function(dk,i){ return {date:new Date(dk),label:'복습 '+(i+1)+'차',round:i}; });
+  }
+  if (!task.startDate) return [];
+  var base=new Date(task.startDate);
+  if (task.mode==='daily') {
+    var arr=[];
+    for(var i=1;i<=30;i++){ var d=new Date(base); d.setDate(d.getDate()+i); arr.push({date:d,label:i+'일차 복습',round:i-1}); }
+    return arr;
+  }
+  return FIVE_OFFSETS.map(function(off,i){ var d=new Date(base); d.setDate(d.getDate()+off); return {date:d,label:FIVE_LABELS[i],round:i}; });
+}
+
+function dateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function checkKey(taskId,round){ return taskId+'_'+round; }
+
+// ── Calendar ───────────────────────────────────────────
+function changeMonth(dir){
+  calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCalendar();
+}
+function renderCalendar(){
+  var months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('cal-title').textContent=calYear+'년 '+months[calMonth];
+  var dotMap={};
+  folders.forEach(function(f){
+    f.tasks.forEach(function(t){
+      getReviewDates(t).forEach(function(rd){
+        var k=dateKey(rd.date);
+        if(!dotMap[k]) dotMap[k]=[];
+        dotMap[k].push({color:f.color,folderId:f.id,taskId:t.id,round:rd.round});
+      });
+    });
+  });
+  var grid=document.getElementById('cal-grid'); grid.innerHTML='';
+  var first=new Date(calYear,calMonth,1).getDay();
+  var dim=new Date(calYear,calMonth+1,0).getDate();
+  var dip=new Date(calYear,calMonth,0).getDate();
+  var todayKey=dateKey(today);
+  var cells=[];
+  for(var i=0;i<first;i++) cells.push({day:dip-first+1+i,cur:false});
+  for(var i=1;i<=dim;i++) cells.push({day:i,cur:true});
+  while(cells.length%7!==0) cells.push({day:cells.length-first-dim+1,cur:false});
+  cells.forEach(function(c,idx){
+    var cell=document.createElement('div');
+    var d=c.cur?new Date(calYear,calMonth,c.day):null;
+    var dk=d?dateKey(d):null;
+    var isSun=(idx%7===0);
+    cell.className='cal-cell'+(c.cur?'':' other-month')+(isSun&&c.cur?' sun-cell':'');
+    if(dk===todayKey) cell.classList.add('today');
+    if(dk&&selectedDate===dk) cell.classList.add('selected-day');
+    var dots=dk?(dotMap[dk]||[]):[];
+    var dotsHtml=dots.slice(0,8).map(function(dot){ return '<div class="dot" style="background:'+dot.color+'"></div>'; }).join('');
+    cell.innerHTML='<div class="day-num">'+c.day+'</div><div class="dot-row">'+dotsHtml+'</div>';
+    if(c.cur){
+      (function(k,dm){ cell.addEventListener('click',function(){ selectedDate=k; renderCalendar(); renderDayDetail(k,dm||[]); }); })(dk,dotMap[dk]);
+    }
+    grid.appendChild(cell);
+  });
+  if(selectedDate) renderDayDetail(selectedDate,dotMap[selectedDate]||[]);
+}
+function renderDayDetail(dk,dots){
+  var detail=document.getElementById('day-detail');
+  if(!dots.length){ detail.style.display='block'; detail.innerHTML='<div class="day-detail-header">'+dk+'</div><div class="no-tasks">복습 없는 날이에요 🎉</div>'; return; }
+  var items=dots.map(function(dot){
+    var f=folders.find(function(f){ return f.id===dot.folderId; }); if(!f) return '';
+    var t=f.tasks.find(function(t){ return t.id===dot.taskId; }); if(!t) return '';
+    var ck=checkKey(dot.taskId,dot.round); var done=!!checked[ck];
+    var rds=getReviewDates(t); var label=rds[dot.round]?rds[dot.round].label:'복습';
+    return '<div class="review-item '+(done?'done':'')+'" id="ri-'+ck+'">'+
+      '<div class="review-check '+(done?'checked':'')+'" onclick="toggleCheck(\''+ck+'\')"></div>'+
+      '<div class="review-color-bar" style="background:'+f.color+'"></div>'+
+      '<div class="review-text">'+
+        '<div class="review-subject">'+escHtml(f.name||'(과목 없음)')+'</div>'+
+        '<div class="review-task">'+escHtml(t.todo||'할 일')+'</div>'+
+        '<div class="review-round">'+label+'</div>'+
+      '</div></div>';
+  }).join('');
+  detail.style.display='block';
+  detail.innerHTML='<div class="day-detail-header">'+dk+' 복습 목록</div>'+items;
+}
+function toggleCheck(ck){
+  checked[ck]=!checked[ck]; save();
+  var ri=document.getElementById('ri-'+ck);
+  if(ri){ var btn=ri.querySelector('.review-check'); if(checked[ck]){ri.classList.add('done');btn.classList.add('checked');}else{ri.classList.remove('done');btn.classList.remove('checked');} }
+}
+
+// ── Stats ──────────────────────────────────────────────
+function renderStats(yr, mo) {
+  if (yr===undefined) yr=statsYear;
+  if (mo===undefined) mo=statsMonth;
+  statsYear=yr; statsMonth=mo;
+  var months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('stats-month-title').textContent=yr+'년 '+months[mo]+' 복습 현황';
+
+  // Build folder-level stats, preserving folder order, each task separate
+  var folderStats=[]; // [{folderId, name, color, total, done, tasks:[{todo,total,done}]}]
+  folders.forEach(function(f){
+    var fEntry={ folderId:f.id, name:f.name||'(과목 없음)', color:f.color, total:0, done:0, tasks:[] };
+    f.tasks.forEach(function(t){
+      var tTotal=0, tDone=0;
+      getReviewDates(t).forEach(function(rd){
+        if(rd.date.getFullYear()===yr && rd.date.getMonth()===mo){
+          tTotal++; if(checked[checkKey(t.id,rd.round)]) tDone++;
+        }
+      });
+      if(tTotal>0){
+        fEntry.total+=tTotal; fEntry.done+=tDone;
+        fEntry.tasks.push({todo:t.todo||'(할 일 없음)', total:tTotal, done:tDone});
+      }
+    });
+    if(fEntry.total>0) folderStats.push(fEntry);
+  });
+
+  // Subject cards
+  var cards=document.getElementById('subject-cards');
+  cards.innerHTML='';
+  if(!folderStats.length){
+    cards.innerHTML='<p style="color:var(--text3);text-align:center;padding:20px">이 달에 복습 일정이 없어요.</p>';
+  }
+  folderStats.forEach(function(fs){
+    var pct=fs.total===0?0:Math.round(fs.done/fs.total*100);
+    var taskRows='';
+    fs.tasks.forEach(function(t){
+      var tp=t.total===0?0:Math.round(t.done/t.total*100);
+      taskRows+='<div class="task-stat-row">'+
+        '<div class="task-stat-name">'+escHtml(t.todo)+'</div>'+
+        '<div class="task-progress-bg"><div class="task-progress-fill" style="width:'+tp+'%;background:'+fs.color+'"></div></div>'+
+        '<div class="task-stat-num">'+t.done+'/'+t.total+'</div>'+
+      '</div>';
+    });
+    cards.innerHTML+=
+      '<div class="folder-stat">'+
+        '<div class="folder-stat-header">'+
+          '<div class="folder-stat-bar" style="background:'+fs.color+'"></div>'+
+          '<div class="folder-stat-name">'+escHtml(fs.name)+'</div>'+
+          '<div class="folder-stat-pct">'+pct+'%</div>'+
+        '</div>'+
+        '<div class="folder-stat-body">'+taskRows+'</div>'+
+      '</div>';
+  });
+
+  drawPie(folderStats);
+}
+
+function drawPie(entries){
+  var canvas=document.getElementById('pie-canvas');
+  var ctx=canvas.getContext('2d');
+  var W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  var cx=W/2,cy=H/2,r=Math.min(W,H)/2-10;
+  if(!entries.length){
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='#e5e5ea';ctx.fill();
+    ctx.beginPath();ctx.arc(cx,cy,r*.5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    document.getElementById('pie-legend').innerHTML=''; return;
+  }
+  var grandTotal=entries.reduce(function(a,e){ return a+(e.total||1); },0);
+  var angle=-Math.PI/2;
+  entries.forEach(function(e){
+    var slice=((e.total||1)/grandTotal)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();
+    ctx.fillStyle=e.color;ctx.fill(); angle+=slice;
+  });
+  ctx.beginPath();ctx.arc(cx,cy,r*.5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+  var totalT=entries.reduce(function(a,e){return a+e.total;},0);
+  var doneT=entries.reduce(function(a,e){return a+e.done;},0);
+  ctx.fillStyle='#1c1c1e'; ctx.font='bold 22px Pretendard,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(totalT===0?'-':Math.round(doneT/totalT*100)+'%',cx,cy-4);
+  ctx.font='11px Pretendard,sans-serif'; ctx.fillStyle='#8e8e93';
+  ctx.fillText('달성률',cx,cy+14);
+  var leg=document.getElementById('pie-legend'); leg.innerHTML='';
+  entries.forEach(function(e){
+    var pct=grandTotal===0?0:Math.round((e.total||1)/grandTotal*100);
+    leg.innerHTML+='<div class="legend-item"><div class="legend-dot" style="background:'+e.color+'"></div><span class="legend-label">'+escHtml(e.name)+'</span><span class="legend-pct">'+pct+'%</span></div>';
+  });
+}
+
+// ── Year Popup ─────────────────────────────────────────
+function openYearPopup(){ popupYear=statsYear; document.getElementById('year-popup').classList.add('open'); renderYearPopup(); }
+function closeYearPopup(){ document.getElementById('year-popup').classList.remove('open'); }
+function changePopupYear(dir){ popupYear+=dir; renderYearPopup(); }
+function renderYearPopup(){
+  var months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('popup-year-title').textContent=popupYear+'년';
+  var grid=document.getElementById('popup-month-grid'); grid.innerHTML='';
+  for(var m=0;m<12;m++){
+    (function(mo){
+      var total=0,done=0;
+      folders.forEach(function(f){ f.tasks.forEach(function(t){ getReviewDates(t).forEach(function(rd){ if(rd.date.getFullYear()===popupYear&&rd.date.getMonth()===mo){ total++; if(checked[checkKey(t.id,rd.round)]) done++; } }); }); });
+      var pct=total===0?'':Math.round(done/total*100)+'%';
+      var isSel=(popupYear===statsYear&&mo===statsMonth);
+      var cell=document.createElement('div');
+      cell.className='month-cell'+(isSel?' selected-month':'');
+      cell.innerHTML=months[mo]+'<div class="month-pct">'+(pct||'-')+'</div>';
+      cell.addEventListener('click',function(){ statsYear=popupYear; statsMonth=mo; closeYearPopup(); renderStats(popupYear,mo); });
+      grid.appendChild(cell);
+    })(m);
+  }
+}
+
+
+// ── Supabase ───────────────────────────────────────────
+var SUPA_URL = 'https://ypfehedumokmfnehqdod.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwZmVoZWR1bW9rbWZuZWhxZG9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1Nzc0NDcsImV4cCI6MjA4NzE1MzQ0N30.1aK1bmoO6x3nQmPeU8TJMD6DajfQ1wUbJBcmz-fM_EY';
+var supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+var currentUser = null;
+var authMode = 'login'; // 'login' | 'signup'
+var saveTimer = null;
+
+function showSync(msg) {
+  var el = document.getElementById('sync-indicator');
+  if (el) el.textContent = msg;
+}
+
+// ── Auth ───────────────────────────────────────────────
+function toggleAuthMode() {
+  authMode = authMode==='login' ? 'signup' : 'login';
+  document.getElementById('auth-title').textContent = authMode==='login' ? '로그인' : '회원가입';
+  document.getElementById('auth-submit-btn').textContent = authMode==='login' ? '로그인' : '회원가입';
+  document.getElementById('auth-switch-text').textContent = authMode==='login' ? '계정이 없으신가요?' : '이미 계정이 있으신가요?';
+  document.getElementById('auth-switch-btn').textContent = authMode==='login' ? '회원가입' : '로그인';
+  document.getElementById('auth-error').textContent = '';
+}
+
+async function authSubmit() {
+  var email = document.getElementById('auth-email').value.trim();
+  var pw    = document.getElementById('auth-pw').value;
+  var errEl = document.getElementById('auth-error');
+  errEl.textContent = '';
+  if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력해주세요.'; return; }
+  var btn = document.getElementById('auth-submit-btn');
+  btn.textContent = '처리 중...'; btn.disabled = true;
+  try {
+    var result;
+    if (authMode === 'login') {
+      result = await supa.auth.signInWithPassword({ email:email, password:pw });
+    } else {
+      result = await supa.auth.signUp({ email:email, password:pw });
+    }
+    if (result.error) {
+      var msg = result.error.message;
+      if (msg.includes('Invalid login')) msg = '이메일 또는 비밀번호가 틀렸어요.';
+      if (msg.includes('already registered')) msg = '이미 가입된 이메일이에요. 로그인해주세요.';
+      if (msg.includes('Password should')) msg = '비밀번호는 6자 이상이어야 해요.';
+      errEl.textContent = msg;
+    } else if (authMode==='signup' && result.data.user && !result.data.session) {
+      errEl.style.color = 'var(--green)';
+      errEl.textContent = '가입 완료! 이메일을 확인해주세요.';
+    }
+  } catch(e) {
+    errEl.textContent = '오류가 발생했어요. 다시 시도해주세요.';
+  }
+  btn.textContent = authMode==='login' ? '로그인' : '회원가입';
+  btn.disabled = false;
+}
+
+// Enter key submit
+document.addEventListener('keydown', function(e) {
+  if (e.key==='Enter' && document.getElementById('auth-screen').style.display!=='none') authSubmit();
+});
+
+async function doLogout() {
+  await supa.auth.signOut();
+}
+
+// ── DB sync ────────────────────────────────────────────
+async function loadFromDB() {
+  if (!currentUser) return;
+  showSync('⟳');
+  try {
+    var fRes = await supa.from('folders').select('data').eq('user_id', currentUser.id).single();
+    var cRes = await supa.from('checks').select('data').eq('user_id', currentUser.id).single();
+    if (fRes.data && fRes.data.data) {
+      folders = fRes.data.data;
+      localStorage.setItem('rp5_folders', JSON.stringify(folders));
+    }
+    if (cRes.data && cRes.data.data) {
+      checked = cRes.data.data;
+      localStorage.setItem('rp5_checked', JSON.stringify(checked));
+    }
+    showSync('');
+  } catch(e) {
+    showSync('');
+  }
+}
+
+async function saveToDB() {
+  if (!currentUser) return;
+  showSync('⟳');
+  try {
+    await supa.from('folders').upsert({ user_id:currentUser.id, data:folders, updated_at:new Date().toISOString() }, { onConflict:'user_id' });
+    await supa.from('checks').upsert({ user_id:currentUser.id, data:checked, updated_at:new Date().toISOString() }, { onConflict:'user_id' });
+    showSync('✓');
+    setTimeout(function(){ showSync(''); }, 2000);
+  } catch(e) {
+    showSync('!');
+  }
+}
+
+// save() 를 debounce 방식으로 DB에도 저장
+var _origSave = save;
+save = function() {
+  localStorage.setItem('rp5_folders', JSON.stringify(folders));
+  localStorage.setItem('rp5_checked', JSON.stringify(checked));
+  if (currentUser) {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveToDB, 1500);
+  }
+};
+
+// ── Auth state listener ────────────────────────────────
+supa.auth.onAuthStateChange(async function(event, session) {
+  if (session && session.user) {
+    currentUser = session.user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('user-bar').style.display = 'flex';
+    document.getElementById('user-email-display').textContent = currentUser.email;
+    // DB에서 먼저 로드 (DB 데이터 우선)
+    await loadFromDB();
+    // DB에 데이터 없으면 로컬 데이터를 DB에 올림
+    if (folders.length === 0) {
+      var local = JSON.parse(localStorage.getItem('rp5_folders') || '[]');
+      if (local.length > 0) {
+        folders = local;
+        await saveToDB();
+      }
+    }
+    renderFolders();
+    if (folders.length === 0) addNewFolder();
+  } else {
+    currentUser = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('user-bar').style.display = 'none';
+    folders = [];
+    checked = {};
+  }
+});
+
+// ── Init ───────────────────────────────────────────────
+// Auth state change will handle rendering after login
+
+</script>
+</body>
+</html>
